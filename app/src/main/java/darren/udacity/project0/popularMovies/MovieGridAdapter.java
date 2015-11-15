@@ -18,7 +18,7 @@ import darren.udacity.project0.R;
 
 /**
  * Created by Darren on 7/12/2015.
- * <p/>
+ *
  * An adapter for displaying movies
  */
 public class MovieGridAdapter extends BaseAdapter implements Serializable {
