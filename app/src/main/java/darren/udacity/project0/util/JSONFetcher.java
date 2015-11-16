@@ -3,15 +3,15 @@ package darren.udacity.project0.util;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.facebook.stetho.okhttp.StethoInterceptor;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 /**
  * Created by Darren on 7/12/2015.
@@ -23,8 +23,11 @@ public class JSONFetcher extends AsyncTask<String, Void, JSONObject> {
     JSONFetcherReceiver callback = null;
     String key = null;
 
+    OkHttpClient client = new OkHttpClient();
+
     public JSONFetcher(JSONFetcherReceiver callback) {
         this.callback = callback;
+        client.networkInterceptors().add(new StethoInterceptor());
     }
 
     @Override
@@ -37,46 +40,18 @@ public class JSONFetcher extends AsyncTask<String, Void, JSONObject> {
     @Override
     protected JSONObject doInBackground(String... params) {
         String jsonString = null;
-        HttpURLConnection urlConnection = null;
-        BufferedReader reader = null;
-
         key = params[1];
 
         try {
-            URL url = new URL(params[0]);
+            Request request = new Request.Builder()
+                    .url(params[0])
+                    .build();
 
-            urlConnection = (HttpURLConnection) url.openConnection();
-            urlConnection.setRequestMethod("GET");
-            urlConnection.connect();
-
-            InputStream inputStream = urlConnection.getInputStream();
-            StringBuilder buffer = new StringBuilder();
-            if (inputStream == null) {
-                return null;
-            }
-            reader = new BufferedReader(new InputStreamReader(inputStream));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                buffer.append(line).append("/n");
-            }
-
-            if (buffer.length() == 0) {
-                return null;
-            }
-
-            jsonString = buffer.toString();
+            Response response = client.newCall(request).execute();
+            jsonString = response.body().string();
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error: ", e);
             return null;
-        } finally {
-            if (urlConnection != null && reader != null) {
-                try {
-                    reader.close();
-                } catch (final IOException e) {
-                    Log.e(LOG_TAG, "Error closing stream: ", e);
-                }
-            }
         }
 
         try {
