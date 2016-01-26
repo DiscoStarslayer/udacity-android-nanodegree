@@ -1,11 +1,21 @@
 package darren.udacity.project0.popularMovies;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.Date;
+
 import darren.udacity.project0.R;
+import darren.udacity.project0.popularMovies.data.FavoritesProvider;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteColumns;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteContentValues;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteCursor;
+import darren.udacity.project0.popularMovies.data.trailer.TrailerContentValues;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -39,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
             fragment.updateMoviesUri("popular");
         } else if (id == R.id.action_rating) {
             fragment.updateMoviesUri("top_rated");
+        } else if (id == R.id.action_favorite) {
         }
 
         return super.onOptionsItemSelected(item);

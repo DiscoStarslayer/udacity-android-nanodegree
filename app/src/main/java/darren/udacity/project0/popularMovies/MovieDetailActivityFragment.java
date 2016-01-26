@@ -1,6 +1,8 @@
 package darren.udacity.project0.popularMovies;
 
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,10 +11,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -23,6 +27,11 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 import darren.udacity.project0.R;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteColumns;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteContentValues;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteCursor;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteSelection;
+import darren.udacity.project0.popularMovies.data.trailer.TrailerContentValues;
 import darren.udacity.project0.util.JSONFetcher;
 import darren.udacity.project0.util.JSONFetcherReceiver;
 
@@ -36,6 +45,7 @@ public class MovieDetailActivityFragment extends Fragment
     TrailerAdapter adapter = null;
     private ListView trailerList = null;
     private Movie movie = null;
+    private ArrayList<YoutubeVideo> trailers = null;
 
     public MovieDetailActivityFragment() {
 
@@ -46,7 +56,8 @@ public class MovieDetailActivityFragment extends Fragment
         switch (key) {
             case "TRAILERS":
                 Log.v(TAG, object.toString());
-                adapter = new TrailerAdapter(getActivity(), processTrailers(object));
+                trailers = processTrailers(object);
+                adapter = new TrailerAdapter(getActivity(), trailers);
                 trailerList.setAdapter(adapter);
         }
     }
@@ -82,6 +93,7 @@ public class MovieDetailActivityFragment extends Fragment
         TextView releaseDate = (TextView) view.findViewById(R.id.release_date);
         RatingBar score = (RatingBar) view.findViewById(R.id.review_score);
         TextView synopsis = (TextView) view.findViewById(R.id.movie_synopsis);
+        Button addToFavoritesButton = (Button) view.findViewById(R.id.add_to_favorites);
 
         movieTitle.setText(movie.title);
         Picasso.with(getActivity())
@@ -107,6 +119,8 @@ public class MovieDetailActivityFragment extends Fragment
         trailerList.setOnItemClickListener(new TrailerClickListener());
         trailerList.setFocusable(false);
 
+        addToFavoritesButton.setOnClickListener(new AddToFavoriteClickListener());
+
         return view;
     }
 
@@ -124,6 +138,69 @@ public class MovieDetailActivityFragment extends Fragment
 
         JSONFetcher fetcher = new JSONFetcher(this);
         fetcher.execute(trailersUri.toString(), "TRAILERS");
+    }
+
+    private class AddToFavoriteClickListener implements Button.OnClickListener {
+        @Override
+        public void onClick(View v) {
+            FavoriteContentValues favoritesValues = new FavoriteContentValues();
+            ContentResolver contentResolver = getActivity().getContentResolver();
+
+            FavoriteSelection favoriteSelector = new FavoriteSelection();
+
+            favoritesValues.putMoviedbId(movie.id)
+                    .putTitle(movie.getTitle())
+                    .putRating(movie.getRating())
+                    .putReleaseDate(movie.releaseDate)
+                    .putSynopsis(movie.overview)
+                    .putPosterImage(movie.posterPath);
+
+            favoriteSelector.moviedbId(movie.id);
+
+            Cursor checkIfExistsCursor = contentResolver.query(
+                    FavoriteColumns.CONTENT_URI,
+                    null,
+                    favoriteSelector.sel(),
+                    favoriteSelector.args(),
+                    null
+            );
+
+            int results = checkIfExistsCursor.getCount();
+
+            checkIfExistsCursor.close();
+
+            if (results == 0) {
+                Uri uri = contentResolver.insert(favoritesValues.uri(), favoritesValues.values());
+
+                Cursor cursor = contentResolver.query(
+                        uri,
+                        null,
+                        null,
+                        null,
+                        null
+                );
+                cursor.moveToFirst();
+                FavoriteCursor favoriteCursor = new FavoriteCursor(cursor);
+
+                for (int i = 0; i < trailers.size(); i++) {
+                    YoutubeVideo trailer = trailers.get(i);
+
+                    TrailerContentValues trailerValues = new TrailerContentValues();
+                    trailerValues.putMovieId(favoriteCursor.getId())
+                            .putName(trailer.getTitle())
+                            .putUrl(trailer.getVideoUrl());
+
+                    contentResolver.insert(trailerValues.uri(), trailerValues.values());
+                }
+                cursor.close();
+
+                Toast toast = Toast.makeText(getContext(), "Added " + movie.getTitle() + " to your favorites!", Toast.LENGTH_SHORT);
+                toast.show();
+            } else {
+                Toast toast = Toast.makeText(getContext(), "This movie is already in your favorites!", Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        }
     }
 
     private class TrailerClickListener implements AdapterView.OnItemClickListener {

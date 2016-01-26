@@ -59,7 +59,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_marginTop="20dp"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:weightSum="1">
 
                     <TextView
                         android:id="@+id/release_date"
@@ -79,6 +80,14 @@
                         android:isIndicator="true"
                         android:numStars="5"
                         android:rating="5.5" />
+
+                    <Button
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Add to Favorites"
+                        android:id="@+id/add_to_favorites"
+                        style="@style/Base.Widget.AppCompat.Button.Colored"
+                        android:layout_weight="0.12" />
                 </LinearLayout>
 
             </LinearLayout>
