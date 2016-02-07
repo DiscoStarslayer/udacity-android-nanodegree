@@ -31,8 +31,9 @@ public class Movie implements Serializable {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
     }
+
+    Movie() {};
 
     public String getPosterPath() {
         return posterPath;

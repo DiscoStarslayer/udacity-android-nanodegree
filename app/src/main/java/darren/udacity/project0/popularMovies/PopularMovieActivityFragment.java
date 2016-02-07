@@ -1,6 +1,7 @@
 package darren.udacity.project0.popularMovies;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -18,6 +19,12 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 import darren.udacity.project0.R;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteColumns;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteCursor;
+import darren.udacity.project0.popularMovies.data.favorite.FavoriteSelection;
+import darren.udacity.project0.popularMovies.data.trailer.TrailerColumns;
+import darren.udacity.project0.popularMovies.data.trailer.TrailerCursor;
+import darren.udacity.project0.popularMovies.data.trailer.TrailerSelection;
 import darren.udacity.project0.util.JSONFetcher;
 import darren.udacity.project0.util.JSONFetcherReceiver;
 
@@ -33,6 +40,8 @@ public class PopularMovieActivityFragment
     Uri configUri = null;
     Uri moviesUri = null;
     String sortBy = "popular";
+
+    GridView grid = null;
 
     ArrayList<Movie> movies = new ArrayList<>();
     MovieGridAdapter adapter = null;
@@ -51,8 +60,8 @@ public class PopularMovieActivityFragment
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putSerializable("Movies", adapter.getMovies());
-        outState.putString("Sort", sortBy);
+        adapter.releaseContext();
+        outState.putSerializable("Adapter", adapter);
     }
 
     public void updateMoviesUri(String sortBy) {
@@ -67,29 +76,50 @@ public class PopularMovieActivityFragment
 
         moviesUri = movieUriBuilder.build();
 
-        adapter.clearMovies();
+        MovieGridAdapter _adapter = new MovieGridAdapter(getActivity(), new ArrayList<Movie>());
+        adapter = _adapter;
+        grid.setAdapter(_adapter);
 
         fetchConfig();
 
         this.sortBy = sortBy;
     }
 
+    public void showFavorites() {
+        FavoriteSelection favoriteSelection = new FavoriteSelection();
+        favoriteSelection.orderById();
+        Cursor cursor = getActivity().getContentResolver().query(
+                FavoriteColumns.CONTENT_URI,
+                null,
+                favoriteSelection.sel(),
+                favoriteSelection.args(),
+                null
+        );
+
+        FavoriteCursor favoriteCursor = new FavoriteCursor(cursor);
+
+        adapter = new MovieGridAdapter(getActivity(), favoriteCursor);
+        grid.setAdapter(adapter);
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        MovieGridAdapter _adapter = null;
         if (savedInstanceState != null) {
             // Doing an unchecked cast
             // we know movies is an array list of movies so suppressing warning
-            @SuppressWarnings("unchecked")
-            ArrayList<Movie> _movies = (ArrayList<Movie>) savedInstanceState.getSerializable("Movies");
-
-            movies = _movies;
-            sortBy = savedInstanceState.getString("Sort");
+            _adapter = (MovieGridAdapter) savedInstanceState.getSerializable("Adapter");
+            _adapter.attachContext(getActivity());
         }
-        adapter = new MovieGridAdapter(getActivity(), movies);
+        if (_adapter == null) {
+            adapter = new MovieGridAdapter(getActivity(), movies);
+        } else {
+            adapter = _adapter;
+        }
 
         View view = inflater.inflate(R.layout.fragment_main_popular_movies, container, false);
-        GridView grid = (GridView) view.findViewById(R.id.poster_grid);
+        grid = (GridView) view.findViewById(R.id.poster_grid);
         grid.setAdapter(adapter);
 
         if (adapter.getCount() == 0) {
@@ -159,14 +189,47 @@ public class PopularMovieActivityFragment
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
             MovieGridAdapter adapter = (MovieGridAdapter) parent.getAdapter();
-
-            Intent intent = new Intent();
             Movie movie = (Movie) adapter.getItem(position);
-            intent.putExtra("Movie", movie);
 
-            intent.setClass(view.getContext(), MovieDetailActivity.class);
+            MainActivity activity = (MainActivity) getActivity();
 
-            startActivity(intent);
+            if (adapter.getMode() == MovieGridAdapter.Mode.CURSOR) {
+                FavoriteSelection favoriteSelection = new FavoriteSelection();
+                favoriteSelection.moviedbId(movie.id);
+                Cursor cursor = getActivity().getContentResolver().query(
+                        FavoriteColumns.CONTENT_URI,
+                        null,
+                        favoriteSelection.sel(),
+                        favoriteSelection.args(),
+                        null
+                );
+
+                FavoriteCursor favoriteCursor = new FavoriteCursor(cursor);
+                favoriteCursor.moveToFirst();
+
+                TrailerSelection trailerSelection = new TrailerSelection();
+                trailerSelection.movieId(favoriteCursor.getId());
+                cursor.close();
+                cursor = getActivity().getContentResolver().query(
+                        TrailerColumns.CONTENT_URI,
+                        null,
+                        trailerSelection.sel(),
+                        trailerSelection.args(),
+                        null
+                );
+
+                TrailerCursor trailerCursor = new TrailerCursor(cursor);
+                ArrayList<YoutubeVideo> trailers = new ArrayList<>();
+                while (trailerCursor.moveToNext()) {
+                    YoutubeVideo newVid = new YoutubeVideo(trailerCursor);
+                    trailers.add(newVid);
+                }
+
+                activity.showMovieDetail(movie, trailers);
+                return;
+            }
+
+            activity.showMovieDetail(movie);
         }
     }
 }

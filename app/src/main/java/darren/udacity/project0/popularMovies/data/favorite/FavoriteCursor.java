@@ -1,5 +1,6 @@
 package darren.udacity.project0.popularMovies.data.favorite;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import android.database.Cursor;
@@ -11,7 +12,7 @@ import darren.udacity.project0.popularMovies.data.base.AbstractCursor;
 /**
  * Cursor wrapper for the {@code favorite} table.
  */
-public class FavoriteCursor extends AbstractCursor implements FavoriteModel {
+public class FavoriteCursor extends AbstractCursor implements FavoriteModel, Serializable {
     public FavoriteCursor(Cursor cursor) {
         super(cursor);
     }

@@ -81,12 +81,16 @@ public class MovieDetailActivityFragment extends Fragment
         return trailers;
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_movie_detail_activty, container, false);
+    public void show(Movie movie) {
+        this.show(movie, null);
+    }
 
-        movie = (Movie) getActivity().getIntent().getSerializableExtra("Movie");
+    public void show(Movie movie, ArrayList<YoutubeVideo> trailers) {
+        View view = getView();
+        this.movie = movie;
+        if (trailers != null) {
+            adapter = new TrailerAdapter(getActivity(), trailers);
+        }
 
         TextView movieTitle = (TextView) view.findViewById(R.id.movie_title);
         ImageView moviePoster = (ImageView) view.findViewById(R.id.movie_poster);
@@ -95,32 +99,82 @@ public class MovieDetailActivityFragment extends Fragment
         TextView synopsis = (TextView) view.findViewById(R.id.movie_synopsis);
         Button addToFavoritesButton = (Button) view.findViewById(R.id.add_to_favorites);
 
-        movieTitle.setText(movie.title);
-        Picasso.with(getActivity())
-                .load(movie.posterPath)
-                .placeholder(R.drawable.placeholder)
-                .into(moviePoster);
-        releaseDate.setText(movie.releaseDate);
+        if (movie != null) {
+            movieTitle.setText(movie.title);
+            Picasso.with(getActivity())
+                    .load(movie.posterPath)
+                    .placeholder(R.drawable.placeholder)
+                    .into(moviePoster);
+            releaseDate.setText(movie.releaseDate);
 
-        Double percent = (movie.ratingDouble / 10.0);
-        Double adjustedRating = percent * score.getNumStars();
-        score.setRating(adjustedRating.floatValue());
+            Double percent = (movie.ratingDouble / 10.0);
+            Double adjustedRating = percent * score.getNumStars();
+            score.setRating(adjustedRating.floatValue());
 
-        synopsis.setText(movie.overview);
+            synopsis.setText(movie.overview);
 
-        trailerList = (ListView) view.findViewById(R.id.trailers_list);
+            trailerList = (ListView) view.findViewById(R.id.trailers_list);
 
-        if (adapter == null) {
-            loadTrailers();
-        } else {
-            trailerList.setAdapter(adapter);
+            if (trailers == null) {
+                loadTrailers();
+            } else {
+                trailerList.setAdapter(adapter);
+            }
+
+            trailerList.setOnItemClickListener(new TrailerClickListener());
+            trailerList.setFocusable(false);
+
+            addToFavoritesButton.setOnClickListener(new AddToFavoriteClickListener());
+        }
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_movie_detail_activty, container, false);
+
+        movie = (Movie) getActivity().getIntent().getSerializableExtra("Movie");
+        ArrayList<YoutubeVideo> trailers = (ArrayList<YoutubeVideo>) getActivity().getIntent().getSerializableExtra("Trailers");
+
+        if (trailers != null) {
+            adapter = new TrailerAdapter(getActivity(), trailers);
         }
 
-        trailerList.setOnItemClickListener(new TrailerClickListener());
-        trailerList.setFocusable(false);
 
-        addToFavoritesButton.setOnClickListener(new AddToFavoriteClickListener());
+        TextView movieTitle = (TextView) view.findViewById(R.id.movie_title);
+        ImageView moviePoster = (ImageView) view.findViewById(R.id.movie_poster);
+        TextView releaseDate = (TextView) view.findViewById(R.id.release_date);
+        RatingBar score = (RatingBar) view.findViewById(R.id.review_score);
+        TextView synopsis = (TextView) view.findViewById(R.id.movie_synopsis);
+        Button addToFavoritesButton = (Button) view.findViewById(R.id.add_to_favorites);
 
+        if (movie != null) {
+            movieTitle.setText(movie.title);
+            Picasso.with(getActivity())
+                    .load(movie.posterPath)
+                    .placeholder(R.drawable.placeholder)
+                    .into(moviePoster);
+            releaseDate.setText(movie.releaseDate);
+
+            Double percent = (movie.ratingDouble / 10.0);
+            Double adjustedRating = percent * score.getNumStars();
+            score.setRating(adjustedRating.floatValue());
+
+            synopsis.setText(movie.overview);
+
+            trailerList = (ListView) view.findViewById(R.id.trailers_list);
+
+            if (adapter == null) {
+                loadTrailers();
+            } else {
+                trailerList.setAdapter(adapter);
+            }
+
+            trailerList.setOnItemClickListener(new TrailerClickListener());
+            trailerList.setFocusable(false);
+
+            addToFavoritesButton.setOnClickListener(new AddToFavoriteClickListener());
+        }
         return view;
     }
 

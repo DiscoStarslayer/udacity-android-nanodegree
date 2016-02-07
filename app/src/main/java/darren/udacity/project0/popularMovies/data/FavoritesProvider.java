@@ -123,7 +123,7 @@ public class FavoritesProvider extends BaseContentProvider {
                 res.idColumn = TrailerColumns._ID;
                 res.tablesWithJoins = TrailerColumns.TABLE_NAME;
                 if (FavoriteColumns.hasColumns(projection)) {
-                    res.tablesWithJoins += " LEFT OUTER JOIN " + FavoriteColumns.TABLE_NAME + " AS " + TrailerColumns.PREFIX_FAVORITE + " ON " + TrailerColumns.TABLE_NAME + "" + TrailerColumns.MOVIE_ID + "=" + TrailerColumns.PREFIX_FAVORITE + "." + FavoriteColumns._ID;
+                    res.tablesWithJoins += " LEFT OUTER JOIN " + FavoriteColumns.TABLE_NAME + " AS " + TrailerColumns.PREFIX_FAVORITE + " ON " + TrailerColumns.MOVIE_ID + "=" + TrailerColumns.PREFIX_FAVORITE + "." + FavoriteColumns._ID;
                 }
                 res.orderBy = TrailerColumns.DEFAULT_ORDER;
                 break;
